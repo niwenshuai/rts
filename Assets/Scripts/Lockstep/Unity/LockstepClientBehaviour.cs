@@ -2,6 +2,7 @@ using System;
 using AIRTS.Lockstep.Client;
 using AIRTS.Lockstep.Shared;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace AIRTS.Lockstep.Unity
 {
@@ -29,10 +30,20 @@ namespace AIRTS.Lockstep.Unity
         private int _logicFramesRemainingInNetworkFrame;
         private LockstepFrame _currentNetworkFrame;
         private bool _readySendInFlight;
+        private GameObject _debugOverlayRoot;
+        private Image _debugStatusDot;
+        private Text _debugStatusText;
+        private Text _debugPlayersText;
+        private Text _debugReadyText;
+        private Text _debugFrameText;
+        private Text _debugHintText;
 
         private async void Awake()
         {
             Client = new LockstepClient();
+            CreateDebugOverlay();
+            UpdateDebugOverlay();
+
             Client.Log += Debug.Log;
             Client.Connected += playerId =>
             {
@@ -63,6 +74,8 @@ namespace AIRTS.Lockstep.Unity
 
         private async void Update()
         {
+            UpdateDebugOverlay();
+
             if (Client == null || !Client.IsConnected)
             {
                 return;
@@ -107,33 +120,6 @@ namespace AIRTS.Lockstep.Unity
 
                 _logicAccumulator -= LogicFrameInterval;
             }
-        }
-
-        private void OnGUI()
-        {
-            if (!showDebugOverlay)
-            {
-                return;
-            }
-
-            GUILayout.BeginArea(new Rect(10f, 10f, 320f, 150f), GUI.skin.box);
-            GUILayout.Label("Lockstep Debug");
-
-            if (Client == null)
-            {
-                GUILayout.Label("Connection: none");
-            }
-            else
-            {
-                GUILayout.Label("Connection: " + (Client.IsConnected ? "connected" : "disconnected"));
-                GUILayout.Label("Players: " + Client.ConnectedPlayerCount + "/" + Client.RequiredPlayerCount);
-                GUILayout.Label("Ready: " + Client.ReadyPlayerCount + "/" + Client.ConnectedPlayerCount + (Client.AllPlayersReady ? " all" : " waiting"));
-                GUILayout.Label("Local F5: " + (Client.LocalPlayerReady ? "ready" : "not ready"));
-                GUILayout.Label("Game: " + (Client.IsGameStarted ? "running" : "waiting"));
-                GUILayout.Label("Network Frame: " + NetworkFrame + "  Logic Frame: " + LogicFrame);
-            }
-
-            GUILayout.EndArea();
         }
 
         private bool TryAdvanceLogicFrame()
@@ -199,8 +185,167 @@ namespace AIRTS.Lockstep.Unity
 
         private void OnDestroy()
         {
+            if (_debugOverlayRoot != null)
+            {
+                Destroy(_debugOverlayRoot);
+                _debugOverlayRoot = null;
+            }
+
             Client?.Dispose();
             Client = null;
+        }
+
+        private void CreateDebugOverlay()
+        {
+            if (!showDebugOverlay || _debugOverlayRoot != null)
+            {
+                return;
+            }
+
+            _debugOverlayRoot = new GameObject("Lockstep Debug Overlay");
+            DontDestroyOnLoad(_debugOverlayRoot);
+
+            Canvas canvas = _debugOverlayRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 1000;
+
+            var scaler = _debugOverlayRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            _debugOverlayRoot.AddComponent<GraphicRaycaster>();
+
+            GameObject panelObject = CreateUiObject("Panel", _debugOverlayRoot.transform);
+            var panel = panelObject.AddComponent<Image>();
+            panel.color = new Color(0.05f, 0.07f, 0.09f, 0.82f);
+
+            RectTransform panelTransform = panelObject.GetComponent<RectTransform>();
+            panelTransform.anchorMin = new Vector2(0f, 1f);
+            panelTransform.anchorMax = new Vector2(0f, 1f);
+            panelTransform.pivot = new Vector2(0f, 1f);
+            panelTransform.anchoredPosition = new Vector2(16f, -16f);
+            panelTransform.sizeDelta = new Vector2(340f, 170f);
+
+            GameObject accentObject = CreateUiObject("Accent", panelObject.transform);
+            var accent = accentObject.AddComponent<Image>();
+            accent.color = new Color(0.16f, 0.68f, 0.95f, 1f);
+            RectTransform accentTransform = accentObject.GetComponent<RectTransform>();
+            accentTransform.anchorMin = new Vector2(0f, 1f);
+            accentTransform.anchorMax = new Vector2(1f, 1f);
+            accentTransform.pivot = new Vector2(0.5f, 1f);
+            accentTransform.anchoredPosition = Vector2.zero;
+            accentTransform.sizeDelta = new Vector2(0f, 3f);
+
+            GameObject titleObject = CreateUiObject("Title", panelObject.transform);
+            Text title = CreateText(titleObject, "LOCKSTEP DEBUG", 14, FontStyle.Bold, new Color(0.88f, 0.95f, 1f, 1f));
+            RectTransform titleTransform = titleObject.GetComponent<RectTransform>();
+            titleTransform.anchorMin = new Vector2(0f, 1f);
+            titleTransform.anchorMax = new Vector2(1f, 1f);
+            titleTransform.pivot = new Vector2(0.5f, 1f);
+            titleTransform.anchoredPosition = new Vector2(18f, -15f);
+            titleTransform.sizeDelta = new Vector2(-36f, 24f);
+
+            GameObject dotObject = CreateUiObject("Status Dot", panelObject.transform);
+            _debugStatusDot = dotObject.AddComponent<Image>();
+            RectTransform dotTransform = dotObject.GetComponent<RectTransform>();
+            dotTransform.anchorMin = new Vector2(0f, 1f);
+            dotTransform.anchorMax = new Vector2(0f, 1f);
+            dotTransform.pivot = new Vector2(0.5f, 0.5f);
+            dotTransform.anchoredPosition = new Vector2(24f, -48f);
+            dotTransform.sizeDelta = new Vector2(10f, 10f);
+
+            _debugStatusText = CreateDebugLine(panelObject.transform, "Status", 42f);
+            _debugPlayersText = CreateDebugLine(panelObject.transform, "Players", 66f);
+            _debugReadyText = CreateDebugLine(panelObject.transform, "Ready", 90f);
+            _debugFrameText = CreateDebugLine(panelObject.transform, "Frames", 114f);
+
+            GameObject hintObject = CreateUiObject("Hint", panelObject.transform);
+            _debugHintText = CreateText(hintObject, string.Empty, 12, FontStyle.Italic, new Color(0.62f, 0.72f, 0.82f, 1f));
+            RectTransform hintTransform = hintObject.GetComponent<RectTransform>();
+            hintTransform.anchorMin = new Vector2(0f, 0f);
+            hintTransform.anchorMax = new Vector2(1f, 0f);
+            hintTransform.pivot = new Vector2(0.5f, 0f);
+            hintTransform.anchoredPosition = new Vector2(18f, 12f);
+            hintTransform.sizeDelta = new Vector2(-36f, 22f);
+        }
+
+        private Text CreateDebugLine(Transform parent, string name, float topOffset)
+        {
+            GameObject textObject = CreateUiObject(name, parent);
+            Text text = CreateText(textObject, string.Empty, 13, FontStyle.Normal, new Color(0.84f, 0.89f, 0.94f, 1f));
+            RectTransform transform = textObject.GetComponent<RectTransform>();
+            transform.anchorMin = new Vector2(0f, 1f);
+            transform.anchorMax = new Vector2(1f, 1f);
+            transform.pivot = new Vector2(0.5f, 1f);
+            transform.anchoredPosition = new Vector2(42f, -topOffset);
+            transform.sizeDelta = new Vector2(-60f, 22f);
+            return text;
+        }
+
+        private static GameObject CreateUiObject(string name, Transform parent)
+        {
+            var gameObject = new GameObject(name);
+            gameObject.transform.SetParent(parent, false);
+            gameObject.AddComponent<RectTransform>();
+            return gameObject;
+        }
+
+        private static Text CreateText(GameObject gameObject, string text, int fontSize, FontStyle fontStyle, Color color)
+        {
+            Text uiText = gameObject.AddComponent<Text>();
+            uiText.text = text;
+            uiText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            uiText.fontSize = fontSize;
+            uiText.fontStyle = fontStyle;
+            uiText.color = color;
+            uiText.alignment = TextAnchor.MiddleLeft;
+            uiText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            uiText.verticalOverflow = VerticalWrapMode.Truncate;
+            uiText.raycastTarget = false;
+            return uiText;
+        }
+
+        private void UpdateDebugOverlay()
+        {
+            if (_debugOverlayRoot == null)
+            {
+                return;
+            }
+
+            _debugOverlayRoot.SetActive(showDebugOverlay);
+            if (!showDebugOverlay)
+            {
+                return;
+            }
+
+            bool connected = Client != null && Client.IsConnected;
+            bool running = Client != null && Client.IsGameStarted;
+            bool localReady = Client != null && Client.LocalPlayerReady;
+            int connectedPlayers = Client != null ? Client.ConnectedPlayerCount : 0;
+            int requiredPlayers = Client != null ? Client.RequiredPlayerCount : 2;
+            int readyPlayers = Client != null ? Client.ReadyPlayerCount : 0;
+
+            if (_debugStatusDot != null)
+            {
+                _debugStatusDot.color = running
+                    ? new Color(0.23f, 0.84f, 0.48f, 1f)
+                    : connected ? new Color(1f, 0.73f, 0.22f, 1f) : new Color(0.95f, 0.25f, 0.25f, 1f);
+            }
+
+            SetDebugText(_debugStatusText, "Status   " + (connected ? running ? "Running" : "Waiting" : "Disconnected"));
+            SetDebugText(_debugPlayersText, "Players  " + connectedPlayers + "/" + requiredPlayers);
+            SetDebugText(_debugReadyText, "Ready    " + readyPlayers + "/" + connectedPlayers + "  F5 " + (localReady ? "Ready" : "Pending"));
+            SetDebugText(_debugFrameText, "Frames   Net " + NetworkFrame + "   Logic " + LogicFrame);
+            SetDebugText(_debugHintText, running ? "Simulation is advancing." : "Waiting for two connected ready players.");
+        }
+
+        private static void SetDebugText(Text text, string value)
+        {
+            if (text != null)
+            {
+                text.text = value;
+            }
         }
     }
 }

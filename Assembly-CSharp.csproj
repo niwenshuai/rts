@@ -66,16 +66,23 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Lockstep\Math\FixedVector2.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Navigation\BinaryHeap.cs" />
+    <Compile Include="Assets\Scripts\Lockstep\BehaviorTree\DecoratorNodes.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Shared\NetMessageType.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Shared\LockstepFrame.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Navigation\NavMeshQuery.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Client\FrameBuffer.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Math\FixedVector3.cs" />
+    <Compile Include="Assets\Scripts\Lockstep\BehaviorTree\BehaviorStatus.cs" />
+    <Compile Include="Assets\Scripts\Lockstep\BehaviorTree\BehaviorNode.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Shared\PlayerCommand.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Navigation\FixedBounds2.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Navigation\DynamicObstacleSet.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Navigation\NavMeshData.cs" />
+    <Compile Include="Assets\Scripts\Lockstep\BehaviorTree\LeafNodes.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Shared\LockstepProtocol.cs" />
+    <Compile Include="Assets\Scripts\Lockstep\BehaviorTree\FixedBehaviorNodes.cs" />
+    <Compile Include="Assets\Scripts\Lockstep\BehaviorTree\CompositeNodes.cs" />
+    <Compile Include="Assets\Scripts\Lockstep\BehaviorTree\BehaviorValue.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Math\Fix64.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Unity\FixedUnityExtensions.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Shared\NetworkPacket.cs" />
@@ -85,6 +92,7 @@
     <Compile Include="Assets\Scripts\Lockstep\Unity\LockstepClientBehaviour.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Navigation\NavMeshBakeSettings.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Navigation\NavPolygon.cs" />
+    <Compile Include="Assets\Scripts\Lockstep\BehaviorTree\BehaviorTreeContext.cs" />
     <Compile Include="Assets\Scripts\Lockstep\Server\LockstepServer.cs" />
   </ItemGroup>
   <ItemGroup>
