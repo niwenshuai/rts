@@ -9,6 +9,9 @@ namespace AIRTS.Lockstep.Shared
         Pong = 5,
         PlayerJoined = 6,
         PlayerLeft = 7,
-        Disconnect = 8
+        Disconnect = 8,
+        Ready = 9,
+        SessionState = 10,
+        GameStarted = 11
     }
 }

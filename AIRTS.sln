@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{B3B807C7-5951-CD4E-AD15-34E774370C1D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{8C1B9402-C33A-7BF6-3A52-9370FF1D59D6}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server", "Server", "{DAD03CFC-D5FA-AC94-41C7-9ABAB326F09E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIRTS.Server", "Server\AIRTS.Server\AIRTS.Server.csproj", "{CE272606-A3C5-4CB6-9E71-019A6ECA885A}"
@@ -17,6 +19,10 @@ Global
 		{B3B807C7-5951-CD4E-AD15-34E774370C1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B3B807C7-5951-CD4E-AD15-34E774370C1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B3B807C7-5951-CD4E-AD15-34E774370C1D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C1B9402-C33A-7BF6-3A52-9370FF1D59D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C1B9402-C33A-7BF6-3A52-9370FF1D59D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C1B9402-C33A-7BF6-3A52-9370FF1D59D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C1B9402-C33A-7BF6-3A52-9370FF1D59D6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CE272606-A3C5-4CB6-9E71-019A6ECA885A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CE272606-A3C5-4CB6-9E71-019A6ECA885A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE272606-A3C5-4CB6-9E71-019A6ECA885A}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -14,11 +14,45 @@ namespace AIRTS.Lockstep.Server
         public event Action<int> ClientConnected;
         public event Action<int> ClientDisconnected;
         public event Action<int, int> FrameAdvanced;
+        public event Action<int> GameStarted;
         public event Action<string> Log;
 
         public int FrameRate { get; }
         public int InputDelay { get; }
+        public int RequiredPlayers { get; }
         public int CurrentFrame => _currentFrame;
+        public int ConnectedPlayerCount
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _clients.Count;
+                }
+            }
+        }
+
+        public int ReadyPlayerCount
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return CountReadyPlayersLocked();
+                }
+            }
+        }
+
+        public bool IsGameStarted
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _isGameStarted;
+                }
+            }
+        }
 
         private readonly object _gate = new object();
         private readonly Dictionary<int, ClientPeer> _clients = new Dictionary<int, ClientPeer>();
@@ -28,8 +62,9 @@ namespace AIRTS.Lockstep.Server
         private CancellationTokenSource _cts;
         private int _nextPlayerId = 1;
         private int _currentFrame;
+        private bool _isGameStarted;
 
-        public LockstepServer(int frameRate = 15, int inputDelay = 2)
+        public LockstepServer(int frameRate = 15, int inputDelay = 2, int requiredPlayers = 2)
         {
             if (frameRate <= 0)
             {
@@ -38,6 +73,7 @@ namespace AIRTS.Lockstep.Server
 
             FrameRate = frameRate;
             InputDelay = System.Math.Max(0, inputDelay);
+            RequiredPlayers = System.Math.Max(1, requiredPlayers);
         }
 
         public void Start(int port)
@@ -74,6 +110,7 @@ namespace AIRTS.Lockstep.Server
 
                 _clients.Clear();
                 _pendingCommands.Clear();
+                _isGameStarted = false;
             }
 
             _listener = null;
@@ -105,6 +142,7 @@ namespace AIRTS.Lockstep.Server
 
                     await SendToClientAsync(playerId, LockstepProtocol.CreateWelcomePacket(playerId, _currentFrame, FrameRate, InputDelay), cancellationToken);
                     await BroadcastAsync(LockstepProtocol.CreatePacket(NetMessageType.PlayerJoined, writer => writer.Write(playerId)), cancellationToken);
+                    await BroadcastSessionStateAsync(cancellationToken);
                     ClientConnected?.Invoke(playerId);
                     _ = ReceiveLoopAsync(playerId, tcpClient, cancellationToken);
                 }
@@ -159,6 +197,11 @@ namespace AIRTS.Lockstep.Server
 
                     lock (_gate)
                     {
+                        if (!_isGameStarted)
+                        {
+                            return;
+                        }
+
                         if (!_pendingCommands.TryGetValue(targetFrame, out var commands))
                         {
                             commands = new List<PlayerCommand>();
@@ -172,6 +215,13 @@ namespace AIRTS.Lockstep.Server
             else if (packet.Type == NetMessageType.Ping)
             {
                 _ = SendToClientAsync(playerId, LockstepProtocol.CreatePacket(NetMessageType.Pong), _cts.Token);
+            }
+            else if (packet.Type == NetMessageType.Ready)
+            {
+                using (BinaryReader reader = LockstepProtocol.CreatePayloadReader(packet))
+                {
+                    SetClientReady(playerId, reader.ReadBoolean());
+                }
             }
         }
 
@@ -193,6 +243,11 @@ namespace AIRTS.Lockstep.Server
                 int frame;
                 lock (_gate)
                 {
+                    if (!_isGameStarted)
+                    {
+                        continue;
+                    }
+
                     frame = ++_currentFrame;
                     if (_pendingCommands.TryGetValue(frame, out commands))
                     {
@@ -208,6 +263,115 @@ namespace AIRTS.Lockstep.Server
                 await BroadcastAsync(LockstepProtocol.CreateFramePacket(lockstepFrame), cancellationToken);
                 FrameAdvanced?.Invoke(frame, commands.Count);
             }
+        }
+
+        public bool ForceStart()
+        {
+            lock (_gate)
+            {
+                if (_isGameStarted)
+                {
+                    return false;
+                }
+
+                _isGameStarted = true;
+            }
+
+            NotifyGameStarted();
+            BroadcastSessionState();
+            return true;
+        }
+
+        private void SetClientReady(int playerId, bool isReady)
+        {
+            bool changed;
+            bool shouldStart;
+            int readyPlayers;
+
+            lock (_gate)
+            {
+                if (!_clients.TryGetValue(playerId, out var client))
+                {
+                    return;
+                }
+
+                changed = client.IsReady != isReady;
+                client.IsReady = isReady;
+                readyPlayers = CountReadyPlayersLocked();
+                shouldStart = CanStartGameLocked();
+                if (shouldStart)
+                {
+                    _isGameStarted = true;
+                }
+            }
+
+            if (changed)
+            {
+                Log?.Invoke("Player " + playerId + (isReady ? " ready" : " not ready") + " (" + readyPlayers + "/" + RequiredPlayers + ").");
+            }
+
+            if (shouldStart)
+            {
+                NotifyGameStarted();
+            }
+
+            BroadcastSessionState();
+        }
+
+        private bool CanStartGameLocked()
+        {
+            return !_isGameStarted && _clients.Count >= RequiredPlayers && CountReadyPlayersLocked() == _clients.Count;
+        }
+
+        private int CountReadyPlayersLocked()
+        {
+            int readyPlayers = 0;
+            foreach (var client in _clients.Values)
+            {
+                if (client.IsReady)
+                {
+                    readyPlayers++;
+                }
+            }
+
+            return readyPlayers;
+        }
+
+        private void NotifyGameStarted()
+        {
+            int startFrame = _currentFrame;
+            Log?.Invoke("Game started at frame " + startFrame + ".");
+            GameStarted?.Invoke(startFrame);
+
+            if (_cts != null && !_cts.IsCancellationRequested)
+            {
+                _ = BroadcastAsync(LockstepProtocol.CreateGameStartedPacket(startFrame), _cts.Token);
+            }
+        }
+
+        private void BroadcastSessionState()
+        {
+            if (_cts != null && !_cts.IsCancellationRequested)
+            {
+                _ = BroadcastSessionStateAsync(_cts.Token);
+            }
+        }
+
+        private Task BroadcastSessionStateAsync(CancellationToken cancellationToken)
+        {
+            int connectedPlayers;
+            int readyPlayers;
+            bool isGameStarted;
+            lock (_gate)
+            {
+                connectedPlayers = _clients.Count;
+                readyPlayers = CountReadyPlayersLocked();
+                isGameStarted = _isGameStarted;
+            }
+
+            return BroadcastAsync(
+                LockstepProtocol.CreateSessionStatePacket(connectedPlayers, readyPlayers, RequiredPlayers, isGameStarted),
+                cancellationToken);
         }
 
         private async Task BroadcastAsync(byte[] packet, CancellationToken cancellationToken)
@@ -270,6 +434,7 @@ namespace AIRTS.Lockstep.Server
             if (_cts != null && !_cts.IsCancellationRequested)
             {
                 _ = BroadcastAsync(LockstepProtocol.CreatePacket(NetMessageType.PlayerLeft, writer => writer.Write(playerId)), _cts.Token);
+                BroadcastSessionState();
             }
         }
 
@@ -279,6 +444,7 @@ namespace AIRTS.Lockstep.Server
             private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
 
             public int PlayerId { get; }
+            public bool IsReady { get; set; }
 
             public ClientPeer(int playerId, TcpClient tcpClient)
             {

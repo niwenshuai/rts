@@ -43,6 +43,27 @@ namespace AIRTS.Lockstep.Shared
             return CreatePacket(NetMessageType.Frame, frame.Write);
         }
 
+        public static byte[] CreateReadyPacket(bool isReady)
+        {
+            return CreatePacket(NetMessageType.Ready, writer => writer.Write(isReady));
+        }
+
+        public static byte[] CreateSessionStatePacket(int connectedPlayers, int readyPlayers, int requiredPlayers, bool gameStarted)
+        {
+            return CreatePacket(NetMessageType.SessionState, writer =>
+            {
+                writer.Write(connectedPlayers);
+                writer.Write(readyPlayers);
+                writer.Write(requiredPlayers);
+                writer.Write(gameStarted);
+            });
+        }
+
+        public static byte[] CreateGameStartedPacket(int startFrame)
+        {
+            return CreatePacket(NetMessageType.GameStarted, writer => writer.Write(startFrame));
+        }
+
         public static byte[] CreateWelcomePacket(int playerId, int startFrame, int frameRate, int inputDelay)
         {
             return CreatePacket(NetMessageType.Welcome, writer =>

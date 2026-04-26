@@ -56,5 +56,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "AIRTS.sln"
+    "dotnet.defaultSolution": "AIRTS.sln",
+    "git.ignoreLimitWarning": true
 }

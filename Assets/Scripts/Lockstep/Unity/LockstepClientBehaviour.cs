@@ -16,6 +16,7 @@ namespace AIRTS.Lockstep.Unity
         [SerializeField] private bool connectOnAwake = true;
         [SerializeField] private bool sendSpaceAsTestCommand = true;
         [SerializeField] private bool logFrames = false;
+        [SerializeField] private bool showDebugOverlay = true;
 
         public event Action<LockstepFrame> LogicFrameReady;
 
@@ -27,6 +28,7 @@ namespace AIRTS.Lockstep.Unity
         private int _nextNetworkFrame = 1;
         private int _logicFramesRemainingInNetworkFrame;
         private LockstepFrame _currentNetworkFrame;
+        private bool _readySendInFlight;
 
         private async void Awake()
         {
@@ -40,6 +42,11 @@ namespace AIRTS.Lockstep.Unity
             Client.Disconnected += reason => Debug.Log("Lockstep disconnected: " + reason);
             Client.PlayerJoined += playerId => Debug.Log("Player joined: " + playerId);
             Client.PlayerLeft += playerId => Debug.Log("Player left: " + playerId);
+            Client.GameStarted += startFrame =>
+            {
+                ResetLogicCursor(startFrame);
+                Debug.Log("Lockstep game started at frame: " + startFrame);
+            };
 
             if (connectOnAwake)
             {
@@ -61,6 +68,29 @@ namespace AIRTS.Lockstep.Unity
                 return;
             }
 
+            if (Input.GetKeyDown(KeyCode.F5) && !Client.LocalPlayerReady && !_readySendInFlight)
+            {
+                _readySendInFlight = true;
+                try
+                {
+                    await Client.SendReadyAsync();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError("Lockstep ready failed: " + ex.Message);
+                }
+                finally
+                {
+                    _readySendInFlight = false;
+                }
+            }
+
+            if (!Client.IsGameStarted)
+            {
+                _logicAccumulator = 0f;
+                return;
+            }
+
             if (sendSpaceAsTestCommand && Input.GetKeyDown(KeyCode.Space))
             {
                 await Client.SendCommandAsync(commandType: 1, targetId: 0, x: 0, y: 0, z: 0);
@@ -77,6 +107,33 @@ namespace AIRTS.Lockstep.Unity
 
                 _logicAccumulator -= LogicFrameInterval;
             }
+        }
+
+        private void OnGUI()
+        {
+            if (!showDebugOverlay)
+            {
+                return;
+            }
+
+            GUILayout.BeginArea(new Rect(10f, 10f, 320f, 150f), GUI.skin.box);
+            GUILayout.Label("Lockstep Debug");
+
+            if (Client == null)
+            {
+                GUILayout.Label("Connection: none");
+            }
+            else
+            {
+                GUILayout.Label("Connection: " + (Client.IsConnected ? "connected" : "disconnected"));
+                GUILayout.Label("Players: " + Client.ConnectedPlayerCount + "/" + Client.RequiredPlayerCount);
+                GUILayout.Label("Ready: " + Client.ReadyPlayerCount + "/" + Client.ConnectedPlayerCount + (Client.AllPlayersReady ? " all" : " waiting"));
+                GUILayout.Label("Local F5: " + (Client.LocalPlayerReady ? "ready" : "not ready"));
+                GUILayout.Label("Game: " + (Client.IsGameStarted ? "running" : "waiting"));
+                GUILayout.Label("Network Frame: " + NetworkFrame + "  Logic Frame: " + LogicFrame);
+            }
+
+            GUILayout.EndArea();
         }
 
         private bool TryAdvanceLogicFrame()

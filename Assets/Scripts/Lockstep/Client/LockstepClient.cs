@@ -13,6 +13,8 @@ namespace AIRTS.Lockstep.Client
         public event Action<LockstepFrame> FrameReceived;
         public event Action<int> PlayerJoined;
         public event Action<int> PlayerLeft;
+        public event Action SessionStateChanged;
+        public event Action<int> GameStarted;
         public event Action<string> Disconnected;
         public event Action<string> Log;
 
@@ -20,6 +22,12 @@ namespace AIRTS.Lockstep.Client
         public int ServerFrame { get; private set; }
         public int FrameRate { get; private set; }
         public int InputDelay { get; private set; }
+        public int ConnectedPlayerCount { get; private set; }
+        public int ReadyPlayerCount { get; private set; }
+        public int RequiredPlayerCount { get; private set; } = 2;
+        public bool LocalPlayerReady { get; private set; }
+        public bool IsGameStarted { get; private set; }
+        public bool AllPlayersReady => ConnectedPlayerCount >= RequiredPlayerCount && ConnectedPlayerCount == ReadyPlayerCount;
         public bool IsConnected => _tcpClient != null && _tcpClient.Connected;
         public FrameBuffer Frames { get; } = new FrameBuffer();
 
@@ -53,8 +61,22 @@ namespace AIRTS.Lockstep.Client
 
             int targetFrame = ServerFrame + InputDelay;
             var command = new PlayerCommand(targetFrame, PlayerId, commandType, targetId, x, y, z, payload);
-            byte[] packet = LockstepProtocol.CreateInputPacket(command);
+            await SendPacketAsync(LockstepProtocol.CreateInputPacket(command));
+        }
 
+        public async Task SendReadyAsync(bool isReady = true)
+        {
+            if (_stream == null)
+            {
+                throw new InvalidOperationException("Client is not connected.");
+            }
+
+            await SendPacketAsync(LockstepProtocol.CreateReadyPacket(isReady));
+            LocalPlayerReady = isReady;
+        }
+
+        private async Task SendPacketAsync(byte[] packet)
+        {
             await _sendLock.WaitAsync(_cts.Token);
             try
             {
@@ -86,6 +108,10 @@ namespace AIRTS.Lockstep.Client
             _stream = null;
             _cts.Dispose();
             _cts = null;
+            ConnectedPlayerCount = 0;
+            ReadyPlayerCount = 0;
+            LocalPlayerReady = false;
+            IsGameStarted = false;
             Frames.ClearBefore(int.MaxValue);
         }
 
@@ -147,6 +173,19 @@ namespace AIRTS.Lockstep.Client
                         break;
                     case NetMessageType.PlayerLeft:
                         PlayerLeft?.Invoke(reader.ReadInt32());
+                        break;
+                    case NetMessageType.SessionState:
+                        ConnectedPlayerCount = reader.ReadInt32();
+                        ReadyPlayerCount = reader.ReadInt32();
+                        RequiredPlayerCount = reader.ReadInt32();
+                        IsGameStarted = reader.ReadBoolean();
+                        SessionStateChanged?.Invoke();
+                        break;
+                    case NetMessageType.GameStarted:
+                        int startFrame = reader.ReadInt32();
+                        ServerFrame = System.Math.Max(ServerFrame, startFrame);
+                        IsGameStarted = true;
+                        GameStarted?.Invoke(startFrame);
                         break;
                 }
             }
