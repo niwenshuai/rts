@@ -1,0 +1,14 @@
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\bin\Debug\net8.0\AIRTS.Server.exe
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\bin\Debug\net8.0\AIRTS.Server.deps.json
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\bin\Debug\net8.0\AIRTS.Server.runtimeconfig.json
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\bin\Debug\net8.0\AIRTS.Server.dll
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\bin\Debug\net8.0\AIRTS.Server.pdb
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\obj\Debug\net8.0\AIRTS.Server.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\obj\Debug\net8.0\AIRTS.Server.AssemblyInfoInputs.cache
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\obj\Debug\net8.0\AIRTS.Server.AssemblyInfo.cs
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\obj\Debug\net8.0\AIRTS.Server.csproj.CoreCompileInputs.cache
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\obj\Debug\net8.0\AIRTS.Server.dll
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\obj\Debug\net8.0\refint\AIRTS.Server.dll
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\obj\Debug\net8.0\AIRTS.Server.pdb
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\obj\Debug\net8.0\AIRTS.Server.genruntimeconfig.cache
+C:\Users\19359\Documents\AIRTS\Server\AIRTS.Server\obj\Debug\net8.0\ref\AIRTS.Server.dll
