@@ -9,6 +9,31 @@ namespace AIRTS.Lockstep.Navigation
         public int Version { get; private set; }
         public IEnumerable<NavObstacle> Obstacles => _obstacles.Values;
 
+        public void Clear()
+        {
+            if (_obstacles.Count == 0)
+            {
+                return;
+            }
+
+            _obstacles.Clear();
+            Version++;
+        }
+
+        public void ReplaceAll(IEnumerable<NavObstacle> obstacles)
+        {
+            _obstacles.Clear();
+            if (obstacles != null)
+            {
+                foreach (NavObstacle obstacle in obstacles)
+                {
+                    _obstacles[obstacle.Id] = obstacle;
+                }
+            }
+
+            Version++;
+        }
+
         public void Upsert(NavObstacle obstacle)
         {
             _obstacles[obstacle.Id] = obstacle;

@@ -34,7 +34,7 @@ namespace AIRTS.Lockstep.Navigation
             while (index > 0)
             {
                 int parent = (index - 1) / 2;
-                if (_items[parent].Priority <= _items[index].Priority)
+                if (HasHigherPriority(_items[parent], _items[index]))
                 {
                     return;
                 }
@@ -54,12 +54,12 @@ namespace AIRTS.Lockstep.Navigation
                 int right = left + 1;
                 int smallest = index;
 
-                if (left < _items.Count && _items[left].Priority < _items[smallest].Priority)
+                if (left < _items.Count && HasHigherPriority(_items[left], _items[smallest]))
                 {
                     smallest = left;
                 }
 
-                if (right < _items.Count && _items[right].Priority < _items[smallest].Priority)
+                if (right < _items.Count && HasHigherPriority(_items[right], _items[smallest]))
                 {
                     smallest = right;
                 }
@@ -74,6 +74,16 @@ namespace AIRTS.Lockstep.Navigation
                 _items[smallest] = temp;
                 index = smallest;
             }
+        }
+
+        private static bool HasHigherPriority(Entry a, Entry b)
+        {
+            if (a.Priority != b.Priority)
+            {
+                return a.Priority < b.Priority;
+            }
+
+            return a.PolygonId <= b.PolygonId;
         }
 
         private readonly struct Entry

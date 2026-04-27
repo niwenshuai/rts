@@ -238,7 +238,7 @@ namespace AIRTS.Lockstep.Unity
             accentTransform.sizeDelta = new Vector2(0f, 3f);
 
             GameObject titleObject = CreateUiObject("Title", panelObject.transform);
-            Text title = CreateText(titleObject, "LOCKSTEP DEBUG", 14, FontStyle.Bold, new Color(0.88f, 0.95f, 1f, 1f));
+            Text title = CreateText(titleObject, "锁步调试", 14, FontStyle.Bold, new Color(0.88f, 0.95f, 1f, 1f));
             RectTransform titleTransform = titleObject.GetComponent<RectTransform>();
             titleTransform.anchorMin = new Vector2(0f, 1f);
             titleTransform.anchorMax = new Vector2(1f, 1f);
@@ -255,10 +255,10 @@ namespace AIRTS.Lockstep.Unity
             dotTransform.anchoredPosition = new Vector2(24f, -48f);
             dotTransform.sizeDelta = new Vector2(10f, 10f);
 
-            _debugStatusText = CreateDebugLine(panelObject.transform, "Status", 42f);
-            _debugPlayersText = CreateDebugLine(panelObject.transform, "Players", 66f);
-            _debugReadyText = CreateDebugLine(panelObject.transform, "Ready", 90f);
-            _debugFrameText = CreateDebugLine(panelObject.transform, "Frames", 114f);
+            _debugStatusText = CreateDebugLine(panelObject.transform, "状态", 42f);
+            _debugPlayersText = CreateDebugLine(panelObject.transform, "玩家", 66f);
+            _debugReadyText = CreateDebugLine(panelObject.transform, "准备", 90f);
+            _debugFrameText = CreateDebugLine(panelObject.transform, "帧", 114f);
 
             GameObject hintObject = CreateUiObject("Hint", panelObject.transform);
             _debugHintText = CreateText(hintObject, string.Empty, 12, FontStyle.Italic, new Color(0.62f, 0.72f, 0.82f, 1f));
@@ -333,11 +333,11 @@ namespace AIRTS.Lockstep.Unity
                     : connected ? new Color(1f, 0.73f, 0.22f, 1f) : new Color(0.95f, 0.25f, 0.25f, 1f);
             }
 
-            SetDebugText(_debugStatusText, "Status   " + (connected ? running ? "Running" : "Waiting" : "Disconnected"));
-            SetDebugText(_debugPlayersText, "Players  " + connectedPlayers + "/" + requiredPlayers);
-            SetDebugText(_debugReadyText, "Ready    " + readyPlayers + "/" + connectedPlayers + "  F5 " + (localReady ? "Ready" : "Pending"));
-            SetDebugText(_debugFrameText, "Frames   Net " + NetworkFrame + "   Logic " + LogicFrame);
-            SetDebugText(_debugHintText, running ? "Simulation is advancing." : "Waiting for two connected ready players.");
+            SetDebugText(_debugStatusText, "状态   " + (connected ? running ? "运行中" : "等待中" : "未连接"));
+            SetDebugText(_debugPlayersText, "玩家   " + connectedPlayers + "/" + requiredPlayers);
+            SetDebugText(_debugReadyText, "准备   " + readyPlayers + "/" + connectedPlayers + "  F5 " + (localReady ? "已准备" : "未准备"));
+            SetDebugText(_debugFrameText, "帧     网络 " + NetworkFrame + "   逻辑 " + LogicFrame);
+            SetDebugText(_debugHintText, running ? "模拟正在推进。" : "等待两个客户端连接并准备。");
         }
 
         private static void SetDebugText(Text text, string value)

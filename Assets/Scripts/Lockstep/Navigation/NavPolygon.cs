@@ -18,7 +18,7 @@ namespace AIRTS.Lockstep.Navigation
             Id = id;
             Bounds = bounds;
             Center = bounds.Center;
-            _neighbors = neighbors.ToArray();
+            _neighbors = neighbors.OrderBy(id => id).ToArray();
         }
     }
 }
